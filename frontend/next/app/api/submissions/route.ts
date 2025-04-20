@@ -7,6 +7,8 @@ import {
   updateSubmission,
   getSubmissionsByAssignment,
   gradeSubmission,
+  getSubmission,
+  getSubmissions,
 } from '@/lib/assignment-service'
 
 export async function POST(req: Request) {
@@ -35,39 +37,35 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET(req: Request) {
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session) {
+    if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { searchParams } = new URL(req.url)
+    const { searchParams } = new URL(request.url)
     const assignmentId = searchParams.get('assignmentId')
+    const studentId = searchParams.get('studentId')
 
-    if (!assignmentId) {
-      return NextResponse.json(
-        { error: 'Assignment ID is required' },
-        { status: 400 }
-      )
+    if (assignmentId && studentId) {
+      const submission = await getSubmission(assignmentId, studentId)
+      return NextResponse.json(submission)
     }
 
-    // If user is a professor, return all submissions for the assignment
-    if (session.user.role === 'professor') {
-      const submissions = await getSubmissionsByAssignment(assignmentId)
+    if (assignmentId) {
+      const submissions = await getSubmissions(assignmentId)
       return NextResponse.json(submissions)
     }
 
-    // If user is a student, return their submission for the assignment
-    const submission = await getSubmissionByAssignmentAndStudent(
-      assignmentId,
-      session.user.id
-    )
-    return NextResponse.json(submission)
-  } catch (error) {
-    console.error('Error fetching submission:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch submission' },
+      { error: 'Missing required parameters' },
+      { status: 400 }
+    )
+  } catch (error) {
+    console.error('Error fetching submissions:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch submissions' },
       { status: 500 }
     )
   }

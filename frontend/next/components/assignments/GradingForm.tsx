@@ -16,7 +16,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 
 const gradingSchema = z.object({
-  grade: z.number().min(0).max(100),
+  grade: z.number().min(0, 'Grade must be positive'),
   feedback: z.string().optional(),
 })
 
@@ -49,8 +49,8 @@ export function GradingForm({
   async function onSubmit(values: z.infer<typeof gradingSchema>) {
     try {
       setIsLoading(true)
-      const response = await fetch(`/api/submissions?id=${submissionId}`, {
-        method: 'PUT',
+      const response = await fetch(`/api/submissions/${submissionId}/grade`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -86,9 +86,7 @@ export function GradingForm({
                   min={0}
                   max={maxPoints}
                   {...field}
-                  onChange={(e) =>
-                    field.onChange(parseInt(e.target.value, 10))
-                  }
+                  onChange={(e) => field.onChange(parseInt(e.target.value, 10))}
                 />
               </FormControl>
               <FormMessage />

@@ -127,6 +127,39 @@ export async function initializeDatabase() {
       )
     `)
 
+    // Create assignments table
+    await executeQuery(`
+      CREATE TABLE IF NOT EXISTS assignments (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        title VARCHAR(255) NOT NULL,
+        description TEXT NOT NULL,
+        course_offering_id UUID REFERENCES course_offerings(id) ON DELETE CASCADE,
+        created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+        due_date TIMESTAMP WITH TIME ZONE NOT NULL,
+        max_points INTEGER NOT NULL,
+        submission_type VARCHAR(50) NOT NULL,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+
+    // Create submissions table
+    await executeQuery(`
+      CREATE TABLE IF NOT EXISTS submissions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        assignment_id UUID REFERENCES assignments(id) ON DELETE CASCADE,
+        student_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        submission_url TEXT NOT NULL,
+        submitted_at TIMESTAMP WITH TIME ZONE NOT NULL,
+        grade INTEGER,
+        feedback TEXT,
+        graded_at TIMESTAMP WITH TIME ZONE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+
     // Create announcements table
     await executeQuery(`
       CREATE TABLE IF NOT EXISTS announcements (

@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { SubmissionForm } from './SubmissionForm'
+import { GradingForm } from './GradingForm'
 import { toast } from 'sonner'
 
 type Assignment = {
@@ -27,6 +28,8 @@ type Submission = {
   submitted_at: string
   grade: number | null
   feedback: string | null
+  student_id: string
+  student_name?: string
 }
 
 type AssignmentListProps = {
@@ -36,9 +39,7 @@ type AssignmentListProps = {
 export function AssignmentList({ courseOfferingId }: AssignmentListProps) {
   const { data: session } = useSession()
   const [assignments, setAssignments] = useState<Assignment[]>([])
-  const [selectedAssignment, setSelectedAssignment] = useState<string | null>(
-    null
-  )
+  const [selectedAssignment, setSelectedAssignment] = useState<string | null>(null)
   const [submissions, setSubmissions] = useState<Record<string, Submission>>({})
   const [isLoading, setIsLoading] = useState(true)
 
@@ -151,17 +152,69 @@ export function AssignmentList({ courseOfferingId }: AssignmentListProps) {
               </div>
             )}
 
+            {session?.user?.role === 'professor' && submissions[assignment.id] && (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-gray-500">
+                    Submitted by: {submissions[assignment.id].student_name}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Submitted:{' '}
+                    {format(
+                      new Date(submissions[assignment.id].submitted_at),
+                      'PPP p'
+                    )}
+                  </p>
+                  {submissions[assignment.id].grade !== null && (
+                    <p className="text-sm font-medium">
+                      Grade: {submissions[assignment.id].grade}/
+                      {assignment.max_points}
+                    </p>
+                  )}
+                  {submissions[assignment.id].feedback && (
+                    <p className="text-sm text-gray-600">
+                      Feedback: {submissions[assignment.id].feedback}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedAssignment(assignment.id)}
+                >
+                  {submissions[assignment.id].grade !== null
+                    ? 'Update Grade'
+                    : 'Grade Submission'}
+                </Button>
+              </div>
+            )}
+
             {selectedAssignment === assignment.id && (
               <div className="mt-4">
-                <SubmissionForm
-                  assignmentId={assignment.id}
-                  initialData={submissions[assignment.id]}
-                  onSuccess={() => {
-                    setSelectedAssignment(null)
-                    // Refresh submissions
-                    window.location.reload()
-                  }}
-                />
+                {session?.user?.role === 'student' ? (
+                  <SubmissionForm
+                    assignmentId={assignment.id}
+                    initialData={submissions[assignment.id]}
+                    onSuccess={() => {
+                      setSelectedAssignment(null)
+                      // Refresh submissions
+                      window.location.reload()
+                    }}
+                  />
+                ) : (
+                  <GradingForm
+                    submissionId={submissions[assignment.id].id}
+                    maxPoints={assignment.max_points}
+                    initialData={{
+                      grade: submissions[assignment.id].grade,
+                      feedback: submissions[assignment.id].feedback,
+                    }}
+                    onSuccess={() => {
+                      setSelectedAssignment(null)
+                      // Refresh submissions
+                      window.location.reload()
+                    }}
+                  />
+                )}
               </div>
             )}
           </CardContent>
