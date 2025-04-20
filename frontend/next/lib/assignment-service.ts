@@ -38,17 +38,6 @@ export async function getAssignmentsByCourse(courseOfferingId: string): Promise<
   return data
 }
 
-export async function getAssignmentById(id: string): Promise<Assignment> {
-  const { data, error } = await supabase
-    .from('assignments')
-    .select('*')
-    .eq('id', id)
-    .single()
-
-  if (error) throw error
-  return data
-}
-
 export async function getAssignment(id: string): Promise<Assignment | null> {
   try {
     const { data, error } = await supabase
@@ -97,89 +86,6 @@ export async function submitAssignment(submission: SubmissionInsert): Promise<Su
   return data
 }
 
-export async function getSubmissionByAssignmentAndStudent(
-  assignmentId: string,
-  studentId: string
-): Promise<Submission | null> {
-  const { data, error } = await supabase
-    .from('submissions')
-    .select('*')
-    .eq('assignment_id', assignmentId)
-    .eq('student_id', studentId)
-    .single()
-
-  if (error && error.code !== 'PGRST116') throw error // PGRST116 is "no rows returned"
-  return data
-}
-
-export async function updateSubmission(id: string, submission: SubmissionUpdate): Promise<Submission> {
-  const { data, error } = await supabase
-    .from('submissions')
-    .update(submission)
-    .eq('id', id)
-    .select()
-    .single()
-
-  if (error) throw error
-  return data
-}
-
-export async function getSubmissionsByAssignment(assignmentId: string): Promise<Submission[]> {
-  const { data, error } = await supabase
-    .from('submissions')
-    .select('*')
-    .eq('assignment_id', assignmentId)
-    .order('submitted_at', { ascending: false })
-
-  if (error) throw error
-  return data
-}
-
-export async function gradeSubmission(
-  id: string,
-  grade: { grade: number; feedback: string | null }
-): Promise<Submission> {
-  const { data, error } = await supabase
-    .from('submissions')
-    .update({
-      grade: grade.grade,
-      feedback: grade.feedback,
-      graded_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', id)
-    .select()
-    .single()
-
-  if (error) throw error
-  return data
-}
-
-export async function getSubmissions(assignmentId: string): Promise<Submission[]> {
-  try {
-    const { data, error } = await supabase
-      .from('submissions')
-      .select(`
-        *,
-        student:students (
-          id,
-          name
-        )
-      `)
-      .eq('assignment_id', assignmentId)
-    
-    if (error) throw error
-    
-    return data.map(submission => ({
-      ...submission,
-      student_name: submission.student.name,
-    }))
-  } catch (error) {
-    console.error('Error fetching submissions:', error)
-    throw error
-  }
-}
-
 export async function getSubmission(
   assignmentId: string,
   studentId: string
@@ -211,22 +117,58 @@ export async function getSubmission(
   }
 }
 
+export async function updateSubmission(id: string, submission: SubmissionUpdate): Promise<Submission> {
+  const { data, error } = await supabase
+    .from('submissions')
+    .update(submission)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function getSubmissions(assignmentId: string): Promise<Submission[]> {
+  try {
+    const { data, error } = await supabase
+      .from('submissions')
+      .select(`
+        *,
+        student:students (
+          id,
+          name
+        )
+      `)
+      .eq('assignment_id', assignmentId)
+      .order('submitted_at', { ascending: false })
+    
+    if (error) throw error
+    
+    return data.map((submission: any) => ({
+      ...submission,
+      student_name: submission.student.name,
+    }))
+  } catch (error) {
+    console.error('Error fetching submissions:', error)
+    throw error
+  }
+}
+
 export async function gradeSubmission(
-  assignmentId: string,
-  studentId: string,
-  grade: number,
-  feedback?: string
+  id: string,
+  grade: { grade: number; feedback: string | null }
 ): Promise<Submission> {
   try {
     const { data, error } = await supabase
       .from('submissions')
       .update({
-        grade,
-        feedback,
+        grade: grade.grade,
+        feedback: grade.feedback,
         graded_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
-      .eq('assignment_id', assignmentId)
-      .eq('student_id', studentId)
+      .eq('id', id)
       .select(`
         *,
         student:students (
