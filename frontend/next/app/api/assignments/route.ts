@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import {
   createAssignment,
   getAssignmentsByCourse,
-  getAssignmentById,
+  getAssignment,
   updateAssignment,
   deleteAssignment,
 } from '@/lib/assignment-service'
@@ -46,7 +46,7 @@ export async function GET(req: Request) {
     const assignmentId = searchParams.get('id')
 
     if (assignmentId) {
-      const assignment = await getAssignmentById(assignmentId)
+      const assignment = await getAssignment(assignmentId)
       return NextResponse.json(assignment)
     }
 
